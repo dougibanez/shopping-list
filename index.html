@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🛒 Lista de Compras para Eventos</title>
+  <meta name="description" content="Crea y comparte listas de compras para tus eventos fácilmente">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #f97316;
+      --primary-dark: #ea580c;
+      --primary-light: #fed7aa;
+      --success: #10b981;
+      --danger: #ef4444;
+      --bg: #f9fafb;
+      --card: #ffffff;
+      --text: #111827;
+      --text-muted: #6b7280;
+      --border: #e5e7eb;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+      --shadow: 0 4px 16px rgba(0,0,0,0.08);
+      --shadow-lg: 0 20px 60px rgba(0,0,0,0.15);
+      --radius: 14px;
+      --radius-sm: 8px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    header {
+      background: linear-gradient(135deg, #f97316 0%, #fb923c 50%, #fbbf24 100%);
+      color: #fff;
+      padding: 0.9rem 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      box-shadow: 0 2px 16px rgba(249,115,22,0.35);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      flex-wrap: wrap;
+    }
+
+    .header-brand { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
+    .header-brand h1 { font-size: 1.25rem; font-weight: 800; letter-spacing: -0.5px; white-space: nowrap; }
+    .header-brand .logo { font-size: 1.6rem; }
+    .list-name-wrap { flex: 1; min-width: 180px; }
+
+    #listName {
+      width: 100%;
+      background: rgba(255,255,255,0.22);
+      border: 1.5px solid rgba(255,255,255,0.4);
+      color: #fff;
+      padding: 0.45rem 0.875rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.9rem;
+      font-family: inherit;
+      font-weight: 500;
+    }
+    #listName::placeholder { color: rgba(255,255,255,0.65); }
+    #listName:focus { outline: none; background: rgba(255,255,255,0.32); border-color: rgba(255,255,255,0.7); }
+
+    .header-actions { display: flex; gap: 0.5rem; flex-shrink: 0; }
+
+    .btn {
+      padding: 0.45rem 0.9rem;
+      border-radius: var(--radius-sm);
+      border: none;
+      font-family: inherit;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.18s;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      white-space: nowrap;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn-white { background: #fff; color: var(--primary); }
+    .btn-white:hover { background: #fff7ed; }
+    .btn-glass { background: rgba(255,255,255,0.2); color: #fff; border: 1.5px solid rgba(255,255,255,0.4); }
+    .btn-glass:hover { background: rgba(255,255,255,0.32); }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { background: var(--primary-dark); }
+    .btn-outline { background: transparent; color: var(--text-muted); border: 1.5px solid var(--border); }
+    .btn-outline:hover { border-color: var(--primary); color: var(--primary); }
+
+    .app-layout {
+      display: grid;
+      grid-template-columns: 1fr 400px;
+      gap: 1.25rem;
+      padding: 1.25rem;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    @media (max-width: 960px) { .app-layout { grid-template-columns: 1fr; } }
+
+    .panel { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; display: flex; flex-direction: column; }
+    .panel-header { padding: 0.875rem 1.125rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; background: var(--card); }
+    .panel-title { font-size: 0.95rem; font-weight: 700; }
+    .panel-body { padding: 1rem 1.125rem; flex: 1; overflow: hidden; }
+
+    .search-wrap { position: relative; margin-bottom: 0.875rem; }
+    .search-icon { position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); font-size: 0.95rem; pointer-events: none; }
+    #searchInput { width: 100%; padding: 0.6rem 0.875rem 0.6rem 2.25rem; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-size: 0.875rem; font-family: inherit; transition: border-color 0.18s; background: var(--bg); }
+    #searchInput:focus { outline: none; border-color: var(--primary); background: #fff; }
+
+    .category-tabs { display: flex; gap: 0.375rem; overflow-x: auto; padding-bottom: 0.625rem; margin-bottom: 0.875rem; scrollbar-width: none; }
+    .category-tabs::-webkit-scrollbar { display: none; }
+    .cat-tab { padding: 0.35rem 0.75rem; border-radius: 20px; border: 1.5px solid var(--border); background: #fff; font-size: 0.78rem; font-family: inherit; font-weight: 500; cursor: pointer; white-space: nowrap; transition: all 0.18s; display: flex; align-items: center; gap: 0.3rem; }
+    .cat-tab:hover { border-color: var(--primary); color: var(--primary); }
+    .cat-tab.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+
+    .items-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 0.625rem; max-height: calc(100vh - 285px); overflow-y: auto; padding-right: 2px; padding-bottom: 4px; }
+    .item-card { border: 1.5px solid var(--border); border-radius: 10px; padding: 0.75rem; cursor: pointer; transition: all 0.18s; position: relative; background: #fff; user-select: none; }
+    .item-card:hover { border-color: var(--primary); box-shadow: 0 4px 14px rgba(249,115,22,0.14); transform: translateY(-1px); }
+    .item-card.in-list { border-color: var(--success); background: #f0fdf8; }
+    .item-badge { position: absolute; top: 0.5rem; right: 0.5rem; font-size: 1rem; }
+    .item-name { font-size: 0.8rem; font-weight: 600; margin-bottom: 0.3rem; line-height: 1.35; padding-right: 1.25rem; }
+    .item-price { font-size: 0.875rem; color: var(--primary); font-weight: 700; }
+    .item-unit { font-size: 0.7rem; color: var(--text-muted); margin-top: 0.1rem; }
+    .item-in-list-tag { font-size: 0.7rem; color: var(--success); font-weight: 600; margin-top: 0.3rem; }
+    .no-results { grid-column: 1 / -1; text-align: center; padding: 2.5rem 1rem; color: var(--text-muted); font-size: 0.9rem; }
+
+    .list-empty { text-align: center; padding: 2.5rem 1rem; color: var(--text-muted); }
+    .list-empty-icon { font-size: 3rem; margin-bottom: 0.75rem; }
+    .list-empty p { font-size: 0.875rem; }
+    .list-empty small { font-size: 0.78rem; color: #9ca3af; display: block; margin-top: 0.35rem; }
+
+    .list-items { display: flex; flex-direction: column; gap: 0.45rem; max-height: calc(100vh - 440px); overflow-y: auto; padding-right: 2px; }
+    .list-item { display: flex; align-items: center; gap: 0.625rem; padding: 0.625rem 0.75rem; border: 1.5px solid var(--border); border-radius: var(--radius-sm); background: #fff; transition: all 0.15s; }
+    .list-item:hover { border-color: #d1d5db; }
+    .list-item-info { flex: 1; min-width: 0; }
+    .list-item-name { font-size: 0.8rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .list-item-subtext { font-size: 0.7rem; color: var(--text-muted); margin-top: 1px; }
+    .qty-control { display: flex; align-items: center; gap: 0.3rem; }
+    .qty-btn { width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--border); background: #fff; cursor: pointer; font-size: 0.95rem; line-height: 1; display: flex; align-items: center; justify-content: center; transition: all 0.15s; color: var(--text); font-family: inherit; font-weight: 600; flex-shrink: 0; }
+    .qty-btn:hover { border-color: var(--primary); color: var(--primary); background: #fff7ed; }
+    .qty-value { font-size: 0.825rem; font-weight: 700; min-width: 1.4rem; text-align: center; }
+    .list-item-total { font-size: 0.825rem; font-weight: 700; color: var(--primary); min-width: 52px; text-align: right; flex-shrink: 0; }
+    .list-item-remove { background: none; border: none; color: #d1d5db; cursor: pointer; font-size: 0.875rem; padding: 0.15rem 0.3rem; border-radius: 4px; transition: color 0.15s; flex-shrink: 0; }
+    .list-item-remove:hover { color: var(--danger); }
+
+    .list-total { border-top: 2px solid var(--border); padding-top: 0.875rem; margin-top: 0.875rem; }
+    .total-row { display: flex; justify-content: space-between; align-items: center; }
+    .total-label { font-size: 0.95rem; font-weight: 700; }
+    .total-amount { font-size: 1.6rem; font-weight: 800; color: var(--primary); letter-spacing: -0.5px; }
+    .total-meta { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem; }
+
+    .badge { display: inline-flex; align-items: center; justify-content: center; background: var(--primary); color: #fff; border-radius: 20px; font-size: 0.7rem; font-weight: 700; padding: 0.1rem 0.5rem; min-width: 20px; }
+
+    .custom-form { margin-top: 1rem; padding: 0.875rem; background: var(--bg); border-radius: var(--radius-sm); border: 1.5px dashed var(--border); }
+    .custom-form-title { font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 0.625rem; }
+    .form-row { display: flex; gap: 0.4rem; margin-bottom: 0.4rem; }
+    .form-input { flex: 1; padding: 0.475rem 0.7rem; border: 1.5px solid var(--border); border-radius: 6px; font-size: 0.82rem; font-family: inherit; background: #fff; transition: border-color 0.15s; }
+    .form-input:focus { outline: none; border-color: var(--primary); }
+    .form-input-sm { width: 90px; flex: none; }
+
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 200; align-items: center; justify-content: center; padding: 1rem; backdrop-filter: blur(3px); }
+    .modal-overlay.show { display: flex; }
+    .modal { background: #fff; border-radius: 18px; padding: 1.75rem; max-width: 460px; width: 100%; box-shadow: var(--shadow-lg); animation: slideUp 0.25s ease; }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+    .modal-icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
+    .modal-title { font-size: 1.2rem; font-weight: 800; margin-bottom: 0.35rem; }
+    .modal-sub { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem; }
+    .share-code-box { background: linear-gradient(135deg, #fff7ed, #fff); border: 2px solid var(--primary-light); border-radius: 12px; padding: 1rem; text-align: center; margin-bottom: 1rem; }
+    .share-code-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 0.35rem; }
+    .share-code-value { font-size: 2.2rem; font-weight: 800; letter-spacing: 6px; color: var(--primary); font-family: 'Courier New', monospace; }
+    .share-code-hint { font-size: 0.7rem; color: var(--text-muted); margin-top: 0.3rem; }
+    .share-url-row { display: flex; gap: 0.5rem; margin-bottom: 1.25rem; }
+    .share-url-input { flex: 1; padding: 0.5rem 0.7rem; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-size: 0.75rem; font-family: 'Courier New', monospace; color: var(--text-muted); background: var(--bg); }
+    .modal-footer { display: flex; gap: 0.5rem; }
+    #loadCodeModal .modal { max-width: 380px; }
+    #loadCodeInput { width: 100%; padding: 0.875rem; border: 2px solid var(--border); border-radius: var(--radius-sm); font-size: 0.85rem; font-weight: 700; font-family: inherit; text-align: center; margin-bottom: 1rem; transition: border-color 0.18s; }
+    #loadCodeInput:focus { outline: none; border-color: var(--primary); }
+
+    #toast { position: fixed; bottom: 1.5rem; right: 1.5rem; background: #1f2937; color: #fff; padding: 0.7rem 1.125rem; border-radius: 10px; font-size: 0.85rem; font-weight: 500; transform: translateY(80px); opacity: 0; transition: all 0.28s cubic-bezier(0.34, 1.56, 0.64, 1); z-index: 300; display: flex; align-items: center; gap: 0.5rem; }
+    #toast.show { transform: translateY(0); opacity: 1; }
+
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
+
+    @media (max-width: 640px) {
+      header { padding: 0.75rem 1rem; }
+      .header-brand h1 { font-size: 1.1rem; }
+      .app-layout { padding: 0.875rem; gap: 1rem; }
+      .items-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); max-height: 50vh; }
+      .list-items { max-height: 35vh; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-brand">
+    <span class="logo">🛒</span>
+    <h1>Lista Eventos</h1>
+  </div>
+  <div class="list-name-wrap">
+    <input type="text" id="listName" placeholder="🎉 Nombre del evento..." maxlength="60" oninput="onListNameChange()">
+  </div>
+  <div class="header-actions">
+    <button class="btn btn-glass" onclick="openShare()">📤 Compartir</button>
+    <button class="btn btn-glass" onclick="openLoadCode()">🔗 Cargar</button>
+    <button class="btn btn-white" onclick="confirmClear()">🗑️</button>
+  </div>
+</header>
+
+<div class="app-layout">
+  <div class="panel">
+    <div class="panel-header">
+      <span class="panel-title">🏪 Catálogo de Productos</span>
+      <span id="catalogCount" style="font-size:0.75rem;color:var(--text-muted)"></span>
+    </div>
+    <div class="panel-body">
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="searchInput" placeholder="Buscar productos..." oninput="onSearch()">
+      </div>
+      <div class="category-tabs" id="categoryTabs"></div>
+      <div class="items-grid" id="itemsGrid"></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-header">
+      <span class="panel-title">📋 Mi Lista de Compras</span>
+      <span class="badge" id="itemCount">0</span>
+    </div>
+    <div class="panel-body">
+      <div class="list-empty" id="emptyState">
+        <div class="list-empty-icon">🛒</div>
+        <p>Tu lista está vacía</p>
+        <small>Toca cualquier producto del catálogo para agregarlo</small>
+      </div>
+      <div class="list-items" id="listItems" style="display:none"></div>
+      <div class="list-total" id="totalSection" style="display:none">
+        <div class="total-row">
+          <span class="total-label">💰 Total estimado</span>
+          <span class="total-amount" id="totalAmount">$0</span>
+        </div>
+        <div class="total-meta" id="totalMeta"></div>
+      </div>
+      <div class="custom-form">
+        <div class="custom-form-title">➕ Agregar producto personalizado</div>
+        <div class="form-row">
+          <input type="text" id="customName" class="form-input" placeholder="Nombre del producto">
+        </div>
+        <div class="form-row">
+          <input type="number" id="customPrice" class="form-input form-input-sm" placeholder="$ Precio" min="0" step="0.5">
+          <input type="text" id="customUnit" class="form-input" placeholder="Unidad (kg, pieza, botella…)">
+          <button class="btn btn-primary" onclick="addCustomItem()">Agregar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="shareModal" onclick="handleOverlayClick(event,'shareModal')">
+  <div class="modal">
+    <div class="modal-icon">📤</div>
+    <h2 class="modal-title">Compartir lista</h2>
+    <p class="modal-sub">Comparte tu lista con un código o un link directo</p>
+    <div class="share-code-box">
+      <div class="share-code-label">Código de lista</div>
+      <div class="share-code-value" id="shareCode">––––––</div>
+      <div class="share-code-hint">Quien tenga el link puede abrir la lista completa</div>
+    </div>
+    <div class="share-url-row">
+      <input type="text" id="shareUrl" class="share-url-input" readonly>
+      <button class="btn btn-primary" onclick="copyLink()">Copiar link</button>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('shareModal')" style="flex:1;justify-content:center">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="loadCodeModal" onclick="handleOverlayClick(event,'loadCodeModal')">
+  <div class="modal">
+    <div class="modal-icon">🔗</div>
+    <h2 class="modal-title">Cargar lista</h2>
+    <p class="modal-sub">Pega el link completo de una lista compartida</p>
+    <input type="text" id="loadCodeInput" placeholder="Pega el link aquí…">
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('loadCodeModal')" style="flex:1;justify-content:center">Cancelar</button>
+      <button class="btn btn-primary" onclick="loadFromCode()" style="flex:1;justify-content:center">Cargar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast">✅ <span id="toastMsg"></span></div>
+
+<script>
+const CATALOG = {
+  tacos: { name: 'Tacos', emoji: '🌮', items: [
+    { id: 'tort_maiz', name: 'Tortillas de maíz', price: 18, unit: 'kg' },
+    { id: 'carne_res', name: 'Carne de res', price: 185, unit: 'kg' },
+    { id: 'pollo_t', name: 'Pollo entero', price: 90, unit: 'kg' },
+    { id: 'cerdo_t', name: 'Carne de cerdo', price: 130, unit: 'kg' },
+    { id: 'chorizo', name: 'Chorizo', price: 120, unit: 'kg' },
+    { id: 'bistec', name: 'Bistec de res', price: 200, unit: 'kg' },
+    { id: 'pastor', name: 'Carne al pastor', price: 160, unit: 'kg' },
+    { id: 'cabeza', name: 'Carne de cabeza', price: 150, unit: 'kg' },
+    { id: 'qso_fresco', name: 'Queso fresco', price: 140, unit: 'kg' },
+    { id: 'ceb_blanca', name: 'Cebolla blanca', price: 25, unit: 'kg' },
+    { id: 'cilantro', name: 'Cilantro', price: 8, unit: 'manojo' },
+    { id: 'aguacate', name: 'Aguacate', price: 28, unit: 'pieza' },
+    { id: 'salsa_verde', name: 'Salsa verde', price: 40, unit: 'kg' },
+    { id: 'salsa_roja', name: 'Salsa roja', price: 40, unit: 'kg' },
+    { id: 'chile_ser', name: 'Chile serrano', price: 35, unit: 'kg' },
+    { id: 'limon_t', name: 'Limones', price: 22, unit: 'kg' },
+    { id: 'crema', name: 'Crema', price: 48, unit: 'kg' },
+    { id: 'tort_harina', name: 'Tortillas de harina', price: 25, unit: 'paquete' },
+  ]},
+  crudos: { name: 'Crudos', emoji: '🦐', items: [
+    { id: 'camaron', name: 'Camarones frescos', price: 285, unit: 'kg' },
+    { id: 'ostiones', name: 'Ostiones', price: 80, unit: 'docena' },
+    { id: 'pulpo', name: 'Pulpo', price: 360, unit: 'kg' },
+    { id: 'mejillones', name: 'Mejillones', price: 200, unit: 'kg' },
+    { id: 'jaiba', name: 'Jaiba', price: 255, unit: 'kg' },
+    { id: 'almeja', name: 'Almejas', price: 185, unit: 'kg' },
+    { id: 'callo', name: 'Callo de hacha', price: 420, unit: 'kg' },
+    { id: 'caracol', name: 'Caracol', price: 220, unit: 'kg' },
+    { id: 'valentina', name: 'Salsa Valentina', price: 28, unit: 'botella' },
+    { id: 'chamoy', name: 'Salsa Chamoy', price: 30, unit: 'botella' },
+    { id: 'pepino_c', name: 'Pepino', price: 10, unit: 'pieza' },
+    { id: 'jicama', name: 'Jícama', price: 20, unit: 'kg' },
+    { id: 'mango_c', name: 'Mango', price: 15, unit: 'pieza' },
+    { id: 'piquin', name: 'Chile piquín', price: 18, unit: 'bolsa' },
+  ]},
+  pizza: { name: 'Pizza', emoji: '🍕', items: [
+    { id: 'masa_pizza', name: 'Masa para pizza', price: 45, unit: 'pieza' },
+    { id: 'salsa_tom', name: 'Salsa de tomate', price: 28, unit: 'lata' },
+    { id: 'mozzarella', name: 'Queso mozzarella', price: 185, unit: 'kg' },
+    { id: 'pepperoni', name: 'Pepperoni', price: 65, unit: 'paquete' },
+    { id: 'champis', name: 'Champiñones', price: 80, unit: 'kg' },
+    { id: 'aceitunas', name: 'Aceitunas', price: 48, unit: 'lata' },
+    { id: 'jamon_p', name: 'Jamón', price: 125, unit: 'kg' },
+    { id: 'pimientos', name: 'Pimientos de colores', price: 18, unit: 'pieza' },
+    { id: 'oregano', name: 'Orégano', price: 18, unit: 'bolsa' },
+    { id: 'aceite_ol', name: 'Aceite de oliva', price: 98, unit: 'botella' },
+    { id: 'albahaca', name: 'Albahaca', price: 22, unit: 'manojo' },
+    { id: 'ajo', name: 'Ajo', price: 15, unit: 'cabeza' },
+    { id: 'sal_ital', name: 'Salchicha italiana', price: 88, unit: 'paquete' },
+  ]},
+  ceviche: { name: 'Ceviche', emoji: '🍋', items: [
+    { id: 'pesc_cev', name: 'Pescado fresco', price: 165, unit: 'kg' },
+    { id: 'cam_cev', name: 'Camarones', price: 285, unit: 'kg' },
+    { id: 'tomate_cev', name: 'Tomate', price: 28, unit: 'kg' },
+    { id: 'ceb_mora', name: 'Cebolla morada', price: 20, unit: 'kg' },
+    { id: 'habanero', name: 'Chile habanero', price: 35, unit: 'kg' },
+    { id: 'tostadas', name: 'Tostadas', price: 28, unit: 'paquete' },
+    { id: 'avoc_cev', name: 'Aguacate', price: 28, unit: 'pieza' },
+    { id: 'cil_cev', name: 'Cilantro', price: 8, unit: 'manojo' },
+    { id: 'limon_cev', name: 'Limones', price: 22, unit: 'kg' },
+    { id: 'sal_mar', name: 'Sal de mar', price: 22, unit: 'bolsa' },
+    { id: 'pip_cev', name: 'Pimienta negra', price: 28, unit: 'bolsa' },
+  ]},
+  sushi: { name: 'Sushi', emoji: '🍣', items: [
+    { id: 'arroz_su', name: 'Arroz para sushi', price: 58, unit: 'kg' },
+    { id: 'nori', name: 'Hojas de nori', price: 88, unit: 'paquete' },
+    { id: 'salmon', name: 'Salmón fresco', price: 395, unit: 'kg' },
+    { id: 'atun', name: 'Atún fresco', price: 360, unit: 'kg' },
+    { id: 'pepino_su', name: 'Pepino', price: 10, unit: 'pieza' },
+    { id: 'avoc_su', name: 'Aguacate', price: 28, unit: 'pieza' },
+    { id: 'qso_crema', name: 'Queso crema', price: 48, unit: 'pieza' },
+    { id: 'soya', name: 'Salsa de soya', price: 38, unit: 'botella' },
+    { id: 'wasabi', name: 'Wasabi', price: 48, unit: 'tubo' },
+    { id: 'jengibre', name: 'Jengibre encurtido', price: 58, unit: 'frasco' },
+    { id: 'vinag_su', name: 'Vinagre de arroz', price: 48, unit: 'botella' },
+    { id: 'kanikama', name: 'Kanikama (surimi)', price: 68, unit: 'paquete' },
+    { id: 'cam_temp', name: 'Camarón para tempura', price: 310, unit: 'kg' },
+    { id: 'har_temp', name: 'Harina tempura', price: 48, unit: 'bolsa' },
+    { id: 'ajonjoli', name: 'Ajonjolí', price: 32, unit: 'bolsa' },
+  ]},
+  bebidas: { name: 'Bebidas', emoji: '🥤', items: [
+    { id: 'garrafon', name: 'Agua natural (garrafón)', price: 38, unit: 'garrafón' },
+    { id: 'agua_min', name: 'Agua mineral (24 pz)', price: 125, unit: 'caja' },
+    { id: 'coca2l', name: 'Coca-Cola 2L', price: 38, unit: 'pieza' },
+    { id: 'pepsi2l', name: 'Pepsi 2L', price: 32, unit: 'pieza' },
+    { id: 'sprite2l', name: 'Sprite 2L', price: 32, unit: 'pieza' },
+    { id: 'naran2l', name: 'Naranjada 2L', price: 32, unit: 'pieza' },
+    { id: 'jugo_nar', name: 'Jugo de naranja', price: 32, unit: 'litro' },
+    { id: 'jamaica', name: 'Flor de jamaica', price: 28, unit: 'bolsa' },
+    { id: 'hielo5', name: 'Hielo (bolsa 5 kg)', price: 28, unit: 'bolsa' },
+    { id: 'vasos_d', name: 'Vasos desechables 50pz', price: 38, unit: 'paquete' },
+    { id: 'popotes', name: 'Popotes', price: 18, unit: 'paquete' },
+    { id: 'hielera', name: 'Hielera', price: 155, unit: 'pieza' },
+  ]},
+  cervezas: { name: 'Cervezas', emoji: '🍺', items: [
+    { id: 'corona6', name: 'Corona (six pack)', price: 98, unit: 'six pack' },
+    { id: 'modelo6', name: 'Modelo Especial (six)', price: 105, unit: 'six pack' },
+    { id: 'heineken6', name: 'Heineken (six pack)', price: 118, unit: 'six pack' },
+    { id: 'tecate6', name: 'Tecate (six pack)', price: 88, unit: 'six pack' },
+    { id: 'victoria6', name: 'Victoria (six pack)', price: 92, unit: 'six pack' },
+    { id: 'indio6', name: 'Indio (six pack)', price: 92, unit: 'six pack' },
+    { id: 'pacifico6', name: 'Pacífico (six pack)', price: 102, unit: 'six pack' },
+    { id: 'xx6', name: 'Dos Equis (six pack)', price: 98, unit: 'six pack' },
+    { id: 'sol6', name: 'Sol (six pack)', price: 92, unit: 'six pack' },
+    { id: 'bohemia6', name: 'Bohemia (six pack)', price: 115, unit: 'six pack' },
+    { id: 'cag_cor', name: 'Caguama Corona', price: 58, unit: 'pieza' },
+    { id: 'cag_mod', name: 'Caguama Modelo', price: 62, unit: 'pieza' },
+    { id: 'cag_pac', name: 'Caguama Pacífico', price: 60, unit: 'pieza' },
+    { id: 'cag_ind', name: 'Caguama Indio', price: 58, unit: 'pieza' },
+  ]},
+  tragos: { name: 'Tragos', emoji: '🍹', items: [
+    { id: 'teq_bco', name: 'Tequila blanco 750ml', price: 285, unit: 'botella' },
+    { id: 'teq_rep', name: 'Tequila reposado 750ml', price: 358, unit: 'botella' },
+    { id: 'mezcal', name: 'Mezcal 750ml', price: 388, unit: 'botella' },
+    { id: 'ron_bco', name: 'Ron blanco 750ml', price: 225, unit: 'botella' },
+    { id: 'ron_osc', name: 'Ron oscuro 750ml', price: 258, unit: 'botella' },
+    { id: 'vodka', name: 'Vodka 750ml', price: 238, unit: 'botella' },
+    { id: 'whiskey', name: 'Whiskey 750ml', price: 388, unit: 'botella' },
+    { id: 'brandy', name: 'Brandy 750ml', price: 205, unit: 'botella' },
+    { id: 'gin', name: 'Gin 750ml', price: 328, unit: 'botella' },
+    { id: 'triple_s', name: 'Triple Sec 750ml', price: 185, unit: 'botella' },
+    { id: 'sangrita', name: 'Sangrita', price: 48, unit: 'botella' },
+    { id: 'agave_sy', name: 'Jarabe de agave', price: 68, unit: 'botella' },
+    { id: 'sal_mar_t', name: 'Sal para margaritas', price: 22, unit: 'pieza' },
+    { id: 'copas25', name: 'Copas desechables 25pz', price: 48, unit: 'paquete' },
+  ]},
+  carnes: { name: 'Carnes', emoji: '🥩', items: [
+    { id: 'arrachera', name: 'Arrachera', price: 285, unit: 'kg' },
+    { id: 'costillas', name: 'Costillas de res', price: 165, unit: 'kg' },
+    { id: 'chuletas', name: 'Chuletas de cerdo', price: 145, unit: 'kg' },
+    { id: 'hamburguesa', name: 'Carne p/hamburguesa', price: 155, unit: 'kg' },
+    { id: 'salchicha', name: 'Salchichas', price: 58, unit: 'paquete' },
+    { id: 'alitas', name: 'Alitas de pollo', price: 95, unit: 'kg' },
+    { id: 'carbon', name: 'Carbón', price: 58, unit: 'bolsa' },
+    { id: 'encendedor', name: 'Encendedor carbón', price: 28, unit: 'pieza' },
+  ]},
+  snacks: { name: 'Snacks', emoji: '🍿', items: [
+    { id: 'papas_fr', name: 'Papas fritas (grande)', price: 48, unit: 'bolsa' },
+    { id: 'nachos', name: 'Nachos Tostitos', price: 42, unit: 'bolsa' },
+    { id: 'cacahuat', name: 'Cacahuates', price: 48, unit: 'kg' },
+    { id: 'chicharr', name: 'Chicharrones', price: 38, unit: 'bolsa' },
+    { id: 'palomitas', name: 'Palomitas', price: 32, unit: 'bolsa' },
+    { id: 'doritos', name: 'Doritos (grande)', price: 48, unit: 'bolsa' },
+    { id: 'guacamol', name: 'Guacamole', price: 85, unit: 'kg' },
+    { id: 'salsa_dip', name: 'Salsa para dip', price: 48, unit: 'frasco' },
+    { id: 'qso_dip', name: 'Queso dip', price: 68, unit: 'frasco' },
+  ]},
+};
+
+let state = { listName: '', items: [], activeCategory: 'all', searchQuery: '' };
+
+function findInCatalog(itemId) {
+  for (const [catId, cat] of Object.entries(CATALOG)) {
+    const found = cat.items.find(i => i.id === itemId);
+    if (found) return { ...found, category: catId };
+  }
+  return null;
+}
+
+function getFilteredItems() {
+  const q = state.searchQuery.toLowerCase().trim();
+  const results = [];
+  const categories = q ? Object.entries(CATALOG) : state.activeCategory === 'all' ? Object.entries(CATALOG) : [[state.activeCategory, CATALOG[state.activeCategory]]].filter(([, v]) => v);
+  for (const [catId, cat] of categories) {
+    for (const item of cat.items) {
+      if (!q || item.name.toLowerCase().includes(q)) results.push({ ...item, category: catId });
+    }
+  }
+  return results;
+}
+
+function isInList(id) { return state.items.some(i => i.id === id); }
+function getListItem(id) { return state.items.find(i => i.id === id); }
+function getTotal() { return state.items.reduce((s, i) => s + i.price * i.qty, 0); }
+function fmt(n) { return '$' + Math.round(n).toLocaleString('es-MX'); }
+
+function render() { renderCategoryTabs(); renderGrid(); renderList(); }
+
+function renderCategoryTabs() {
+  const el = document.getElementById('categoryTabs');
+  const tabs = [{ id: 'all', name: 'Todos', emoji: '🏪' }, ...Object.entries(CATALOG).map(([id, c]) => ({ id, name: c.name, emoji: c.emoji }))];
+  el.innerHTML = tabs.map(t => `<button class="cat-tab${state.activeCategory === t.id ? ' active' : ''}" onclick="setCategory('${t.id}')">${t.emoji} ${t.name}</button>`).join('');
+}
+
+function renderGrid() {
+  const grid = document.getElementById('itemsGrid');
+  const items = getFilteredItems();
+  document.getElementById('catalogCount').textContent = items.length + ' producto' + (items.length !== 1 ? 's' : '');
+  if (!items.length) { grid.innerHTML = '<div class="no-results">🔍 No se encontraron productos<br><small style="font-size:0.75rem">Puedes agregarlo manualmente abajo</small></div>'; return; }
+  grid.innerHTML = items.map(item => {
+    const inList = isInList(item.id);
+    const li = inList ? getListItem(item.id) : null;
+    return `<div class="item-card${inList ? ' in-list' : ''}" onclick="toggleItem('${item.id}')">
+      <span class="item-badge">${inList ? '✅' : '➕'}</span>
+      <div class="item-name">${item.name}</div>
+      <div class="item-price">${fmt(item.price)}</div>
+      <div class="item-unit">por ${item.unit}</div>
+      ${inList ? `<div class="item-in-list-tag">En lista: ${li.qty}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function renderList() {
+  const listEl = document.getElementById('listItems');
+  const emptyEl = document.getElementById('emptyState');
+  const totalEl = document.getElementById('totalSection');
+  document.getElementById('itemCount').textContent = state.items.length;
+  if (!state.items.length) { emptyEl.style.display = ''; listEl.style.display = 'none'; totalEl.style.display = 'none'; return; }
+  emptyEl.style.display = 'none'; listEl.style.display = 'flex'; totalEl.style.display = '';
+  listEl.innerHTML = state.items.map(item => `
+    <div class="list-item">
+      <div class="list-item-info">
+        <div class="list-item-name">${item.name}</div>
+        <div class="list-item-subtext">${fmt(item.price)} / ${item.unit}</div>
+      </div>
+      <div class="qty-control">
+        <button class="qty-btn" onclick="updateQty('${item.id}', -1)">−</button>
+        <span class="qty-value">${item.qty}</span>
+        <button class="qty-btn" onclick="updateQty('${item.id}', 1)">+</button>
+      </div>
+      <div class="list-item-total">${fmt(item.price * item.qty)}</div>
+      <button class="list-item-remove" onclick="removeFromList('${item.id}')" title="Eliminar">✕</button>
+    </div>
+  `).join('');
+  document.getElementById('totalAmount').textContent = fmt(getTotal());
+  document.getElementById('totalMeta').textContent = `${state.items.length} productos · ${state.items.reduce((s,i)=>s+i.qty,0)} unidades`;
+}
+
+function setCategory(id) { state.activeCategory = id; state.searchQuery = ''; document.getElementById('searchInput').value = ''; render(); }
+function onSearch() { state.searchQuery = document.getElementById('searchInput').value; if (state.searchQuery) state.activeCategory = 'all'; renderCategoryTabs(); renderGrid(); }
+function onListNameChange() { state.listName = document.getElementById('listName').value; save(); }
+
+function toggleItem(id) {
+  if (isInList(id)) { removeFromList(id); }
+  else { const found = findInCatalog(id); if (found) addToList({ ...found, qty: 1, isCustom: false }); }
+}
+function addToList(item) { state.items.push(item); save(); render(); }
+function removeFromList(id) { state.items = state.items.filter(i => i.id !== id); save(); render(); }
+function updateQty(id, delta) { const item = getListItem(id); if (!item) return; item.qty = Math.max(1, item.qty + delta); save(); render(); }
+
+function addCustomItem() {
+  const name = document.getElementById('customName').value.trim();
+  const price = parseFloat(document.getElementById('customPrice').value) || 0;
+  const unit = document.getElementById('customUnit').value.trim() || 'pieza';
+  if (!name) { toast('⚠️ Escribe el nombre del producto'); return; }
+  const id = 'custom_' + Date.now();
+  addToList({ id, name, price, unit, qty: 1, category: 'custom', isCustom: true });
+  document.getElementById('customName').value = '';
+  document.getElementById('customPrice').value = '';
+  document.getElementById('customUnit').value = '';
+  toast('✅ Producto agregado: ' + name);
+}
+
+function confirmClear() {
+  if (!state.items.length) { toast('ℹ️ La lista ya está vacía'); return; }
+  if (confirm('¿Limpiar toda la lista?')) { state.items = []; save(); render(); toast('🗑️ Lista limpiada'); }
+}
+
+function encodeList() { return btoa(unescape(encodeURIComponent(JSON.stringify({ name: state.listName, items: state.items })))); }
+function decodeList(enc) { try { return JSON.parse(decodeURIComponent(escape(atob(enc)))); } catch { return null; } }
+function getShareUrl() { return window.location.origin + window.location.pathname + '?lista=' + encodeList(); }
+
+function openShare() {
+  if (!state.items.length) { toast('ℹ️ Agrega productos primero'); return; }
+  document.getElementById('shareCode').textContent = encodeList().slice(0, 6).toUpperCase();
+  document.getElementById('shareUrl').value = getShareUrl();
+  document.getElementById('shareModal').classList.add('show');
+}
+
+function copyLink() {
+  navigator.clipboard.writeText(getShareUrl()).then(() => { toast('📋 Link copiado'); closeModal('shareModal'); }).catch(() => { document.getElementById('shareUrl').select(); document.execCommand('copy'); toast('📋 Link copiado'); closeModal('shareModal'); });
+}
+
+function openLoadCode() { document.getElementById('loadCodeInput').value = ''; document.getElementById('loadCodeModal').classList.add('show'); }
+
+function loadFromCode() {
+  const raw = document.getElementById('loadCodeInput').value.trim();
+  let encoded = null;
+  if (raw.includes('?lista=')) { try { encoded = new URL(raw).searchParams.get('lista'); } catch {} }
+  else if (raw.startsWith('http')) { try { encoded = new URL(raw).searchParams.get('lista'); } catch {} }
+  else { encoded = raw; }
+  if (!encoded) { toast('⚠️ Link inválido'); return; }
+  const data = decodeList(encoded);
+  if (!data || !data.items) { toast('⚠️ No se pudo cargar la lista'); return; }
+  state.listName = data.name || ''; state.items = data.items;
+  document.getElementById('listName').value = state.listName;
+  closeModal('loadCodeModal'); save(); render();
+  toast('✅ Lista cargada: ' + (state.listName || 'Sin nombre'));
+}
+
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+function handleOverlayClick(e, id) { if (e.target === document.getElementById(id)) closeModal(id); }
+
+const STORAGE_KEY = 'evento_lista_v1';
+function save() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ name: state.listName, items: state.items })); } catch {} }
+function load() { try { const raw = localStorage.getItem(STORAGE_KEY); if (raw) { const d = JSON.parse(raw); state.listName = d.name || ''; state.items = d.items || []; } } catch {} }
+
+let toastTimer = null;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  document.getElementById('toastMsg').textContent = msg;
+  el.className = 'show';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.className = ''; }, 2800);
+}
+
+function init() {
+  const params = new URLSearchParams(window.location.search);
+  const listaParam = params.get('lista');
+  if (listaParam) {
+    const data = decodeList(listaParam);
+    if (data) { state.listName = data.name || ''; state.items = data.items || []; window.history.replaceState({}, '', window.location.pathname); }
+  } else { load(); }
+  document.getElementById('listName').value = state.listName;
+  render();
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeModal('shareModal'); closeModal('loadCodeModal'); } });
+
+init();
+</script>
+</body>
+</html>
