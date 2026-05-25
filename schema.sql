@@ -1,0 +1,6 @@
+CREATE TABLE IF NOT EXISTS lists (
+  code  CHAR(5)     PRIMARY KEY,
+  name  TEXT        NOT NULL DEFAULT '',
+  items JSONB       NOT NULL DEFAULT '[]',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);

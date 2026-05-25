@@ -123,6 +123,9 @@
     .btn-danger { background: var(--danger); color: #fff; }
     .btn-danger:hover { background: #dc2626; }
 
+    .btn-wa { background: #25D366; color: #fff; }
+    .btn-wa:hover { background: #128C7E; }
+
     .btn-outline {
       background: transparent;
       color: var(--text-muted);
@@ -681,20 +684,21 @@
   <div class="modal">
     <div class="modal-icon">📤</div>
     <h2 class="modal-title">Compartir lista</h2>
-    <p class="modal-sub">Comparte tu lista con un código o un link directo</p>
+    <p class="modal-sub">Link corto listo para enviar por WhatsApp</p>
 
     <div class="share-code-box">
-      <div class="share-code-label">Código de lista</div>
-      <div class="share-code-value" id="shareCode">––––––</div>
-      <div class="share-code-hint">Quien tenga el link puede abrir la lista completa</div>
+      <div class="share-code-label">Código</div>
+      <div class="share-code-value" id="shareCode" style="font-size:2.4rem;letter-spacing:8px">⏳</div>
+      <div class="share-code-hint">Cualquiera con este link abre la lista directo</div>
     </div>
 
     <div class="share-url-row">
-      <input type="text" id="shareUrl" class="share-url-input" readonly>
-      <button class="btn btn-primary" onclick="copyLink()">Copiar link</button>
+      <input type="text" id="shareUrl" class="share-url-input" readonly placeholder="Generando…">
+      <button class="btn btn-primary" onclick="copyLink()">Copiar</button>
     </div>
 
     <div class="modal-footer">
+      <a id="waBtn" href="#" target="_blank" rel="noopener" class="btn btn-wa" style="flex:1;justify-content:center;text-decoration:none">📲 WhatsApp</a>
       <button class="btn btn-outline" onclick="closeModal('shareModal')" style="flex:1;justify-content:center">Cerrar</button>
     </div>
   </div>
@@ -1122,41 +1126,43 @@ function confirmClear() {
 // ============================================================
 // SHARE / LOAD
 // ============================================================
-function encodeList() {
-  const data = { name: state.listName, items: state.items };
-  return btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+function buildShareUrl(code) {
+  return window.location.origin + window.location.pathname + '?lista=' + code;
 }
 
-function decodeList(encoded) {
-  try {
-    return JSON.parse(decodeURIComponent(escape(atob(encoded))));
-  } catch { return null; }
-}
-
-function getShareUrl() {
-  const base = window.location.origin + window.location.pathname;
-  return base + '?lista=' + encodeList();
-}
-
-function openShare() {
+async function openShare() {
   if (!state.items.length) { toast('ℹ️ Agrega productos primero'); return; }
-  const code = encodeList().slice(0, 6).toUpperCase();
-  document.getElementById('shareCode').textContent = code;
-  document.getElementById('shareUrl').value = getShareUrl();
+  document.getElementById('shareCode').textContent = '⏳';
+  document.getElementById('shareUrl').value = '';
+  document.getElementById('waBtn').href = '#';
   document.getElementById('shareModal').classList.add('show');
+
+  try {
+    const resp = await fetch('/api/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: state.listName, items: state.items })
+    });
+    if (!resp.ok) throw new Error(await resp.text());
+    const { code } = await resp.json();
+    const url = buildShareUrl(code);
+    document.getElementById('shareCode').textContent = code;
+    document.getElementById('shareUrl').value = url;
+    document.getElementById('waBtn').href =
+      'https://wa.me/?text=' + encodeURIComponent('🛒 ' + (state.listName || 'Lista de compras') + '\n' + url);
+  } catch (err) {
+    console.error(err);
+    document.getElementById('shareCode').textContent = '❌';
+    toast('❌ Error al generar el link');
+  }
 }
 
 function copyLink() {
-  const url = getShareUrl();
-  navigator.clipboard.writeText(url).then(() => {
-    toast('📋 Link copiado al portapapeles');
-    closeModal('shareModal');
-  }).catch(() => {
-    document.getElementById('shareUrl').select();
-    document.execCommand('copy');
-    toast('📋 Link copiado');
-    closeModal('shareModal');
-  });
+  const url = document.getElementById('shareUrl').value;
+  if (!url) { toast('⏳ Espera que se genere el link'); return; }
+  navigator.clipboard.writeText(url)
+    .then(() => { toast('📋 Link copiado'); closeModal('shareModal'); })
+    .catch(() => { document.getElementById('shareUrl').select(); document.execCommand('copy'); toast('📋 Link copiado'); closeModal('shareModal'); });
 }
 
 function openLoadCode() {
@@ -1164,33 +1170,31 @@ function openLoadCode() {
   document.getElementById('loadCodeModal').classList.add('show');
 }
 
-function loadFromCode() {
+async function loadFromCode() {
   const raw = document.getElementById('loadCodeInput').value.trim();
-  let encoded = null;
+  let code = raw.toUpperCase();
 
-  if (raw.includes('?lista=')) {
-    encoded = new URL(raw).searchParams.get('lista');
-  } else if (raw.startsWith('http')) {
-    try {
-      encoded = new URL(raw).searchParams.get('lista');
-    } catch { encoded = null; }
-  } else {
-    encoded = raw;
+  if (raw.startsWith('http')) {
+    try { code = new URL(raw).searchParams.get('lista') || ''; } catch {}
   }
+  if (!code) { toast('⚠️ Ingresa un código o link válido'); return; }
 
-  if (!encoded) { toast('⚠️ Link o código inválido'); return; }
-
-  const data = decodeList(encoded);
-  if (!data || !data.items) { toast('⚠️ No se pudo cargar la lista'); return; }
-
-  state.listName = data.name || '';
-  state.items = data.items;
-  document.getElementById('listName').value = state.listName;
-
-  closeModal('loadCodeModal');
-  save();
-  render();
-  toast('✅ Lista cargada: ' + (state.listName || 'Sin nombre'));
+  try {
+    const resp = await fetch('/api/load?code=' + encodeURIComponent(code));
+    if (resp.status === 404) { toast('⚠️ Lista no encontrada'); return; }
+    if (!resp.ok) throw new Error(await resp.text());
+    const data = await resp.json();
+    state.listName = data.name || '';
+    state.items = data.items || [];
+    document.getElementById('listName').value = state.listName;
+    closeModal('loadCodeModal');
+    save();
+    render();
+    toast('✅ Lista cargada: ' + (state.listName || 'Sin nombre'));
+  } catch (err) {
+    console.error(err);
+    toast('❌ Error al cargar la lista');
+  }
 }
 
 function closeModal(id) {
@@ -1242,19 +1246,20 @@ function toast(msg) {
 // ============================================================
 // INIT
 // ============================================================
-function init() {
-  // Check URL params first (shared list)
+async function init() {
   const params = new URLSearchParams(window.location.search);
   const listaParam = params.get('lista');
 
   if (listaParam) {
-    const data = decodeList(listaParam);
-    if (data) {
-      state.listName = data.name || '';
-      state.items = data.items || [];
-      // Clean URL without reloading
-      window.history.replaceState({}, '', window.location.pathname);
-    }
+    window.history.replaceState({}, '', window.location.pathname);
+    try {
+      const resp = await fetch('/api/load?code=' + encodeURIComponent(listaParam.toUpperCase()));
+      if (resp.ok) {
+        const data = await resp.json();
+        state.listName = data.name || '';
+        state.items = data.items || [];
+      }
+    } catch {}
   } else {
     load();
   }

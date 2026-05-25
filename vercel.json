@@ -1,0 +1,6 @@
+{
+  "buildCommand": null,
+  "installCommand": "npm install",
+  "framework": null,
+  "outputDirectory": "."
+}
