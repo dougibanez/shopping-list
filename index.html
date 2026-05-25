@@ -94,6 +94,8 @@
     .btn-primary:hover { background: var(--primary-dark); }
     .btn-outline { background: transparent; color: var(--text-muted); border: 1.5px solid var(--border); }
     .btn-outline:hover { border-color: var(--primary); color: var(--primary); }
+    .btn-wa { background: #25D366; color: #fff; }
+    .btn-wa:hover { background: #128C7E; }
 
     .app-layout {
       display: grid;
@@ -271,17 +273,18 @@
   <div class="modal">
     <div class="modal-icon">📤</div>
     <h2 class="modal-title">Compartir lista</h2>
-    <p class="modal-sub">Comparte tu lista con un código o un link directo</p>
+    <p class="modal-sub">Link corto listo para enviar por WhatsApp</p>
     <div class="share-code-box">
-      <div class="share-code-label">Código de lista</div>
-      <div class="share-code-value" id="shareCode">––––––</div>
-      <div class="share-code-hint">Quien tenga el link puede abrir la lista completa</div>
+      <div class="share-code-label">Link corto</div>
+      <div class="share-code-value" id="shareCode" style="font-size:1.4rem;letter-spacing:3px">⏳</div>
+      <div class="share-code-hint">Cualquiera con este link abre la lista directo</div>
     </div>
     <div class="share-url-row">
-      <input type="text" id="shareUrl" class="share-url-input" readonly>
-      <button class="btn btn-primary" onclick="copyLink()">Copiar link</button>
+      <input type="text" id="shareUrl" class="share-url-input" readonly placeholder="Generando link…">
+      <button class="btn btn-primary" onclick="copyLink()">Copiar</button>
     </div>
     <div class="modal-footer">
+      <a id="waBtn" href="#" target="_blank" rel="noopener" class="btn btn-wa" style="flex:1;justify-content:center;text-decoration:none">📲 WhatsApp</a>
       <button class="btn btn-outline" onclick="closeModal('shareModal')" style="flex:1;justify-content:center">Cerrar</button>
     </div>
   </div>
@@ -563,19 +566,42 @@ function confirmClear() {
   if (confirm('¿Limpiar toda la lista?')) { state.items = []; save(); render(); toast('🗑️ Lista limpiada'); }
 }
 
-function encodeList() { return btoa(unescape(encodeURIComponent(JSON.stringify({ name: state.listName, items: state.items })))); }
-function decodeList(enc) { try { return JSON.parse(decodeURIComponent(escape(atob(enc)))); } catch { return null; } }
+function encodeList() {
+  const json = JSON.stringify({ name: state.listName, items: state.items });
+  return btoa(unescape(encodeURIComponent(json))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+}
+function decodeList(enc) {
+  try {
+    let b64 = enc.replace(/-/g, '+').replace(/_/g, '/');
+    while (b64.length % 4) b64 += '=';
+    return JSON.parse(decodeURIComponent(escape(atob(b64))));
+  } catch { return null; }
+}
 function getShareUrl() { return window.location.origin + window.location.pathname + '?lista=' + encodeList(); }
 
-function openShare() {
+async function openShare() {
   if (!state.items.length) { toast('ℹ️ Agrega productos primero'); return; }
-  document.getElementById('shareCode').textContent = encodeList().slice(0, 6).toUpperCase();
-  document.getElementById('shareUrl').value = getShareUrl();
+  const fullUrl = getShareUrl();
+  document.getElementById('shareCode').textContent = '⏳';
+  document.getElementById('shareUrl').value = '';
+  document.getElementById('waBtn').href = '#';
   document.getElementById('shareModal').classList.add('show');
+  let shareUrl = fullUrl;
+  try {
+    const resp = await fetch('https://is.gd/create.php?format=json&url=' + encodeURIComponent(fullUrl));
+    const data = await resp.json();
+    if (data.shorturl) shareUrl = data.shorturl;
+  } catch {}
+  const code = shareUrl.replace('https://is.gd/', '').replace('https://', '');
+  document.getElementById('shareCode').textContent = code;
+  document.getElementById('shareUrl').value = shareUrl;
+  document.getElementById('waBtn').href = 'https://wa.me/?text=' + encodeURIComponent('🛒 ' + (state.listName || 'Lista de compras') + '\n' + shareUrl);
 }
 
 function copyLink() {
-  navigator.clipboard.writeText(getShareUrl()).then(() => { toast('📋 Link copiado'); closeModal('shareModal'); }).catch(() => { document.getElementById('shareUrl').select(); document.execCommand('copy'); toast('📋 Link copiado'); closeModal('shareModal'); });
+  const url = document.getElementById('shareUrl').value;
+  if (!url) { toast('⏳ Espera un momento'); return; }
+  navigator.clipboard.writeText(url).then(() => { toast('📋 Link copiado'); closeModal('shareModal'); }).catch(() => { document.getElementById('shareUrl').select(); document.execCommand('copy'); toast('📋 Link copiado'); closeModal('shareModal'); });
 }
 
 function openLoadCode() { document.getElementById('loadCodeInput').value = ''; document.getElementById('loadCodeModal').classList.add('show'); }
