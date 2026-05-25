@@ -1,44 +1,59 @@
 #!/usr/bin/env node
-// Ejecutar: NEON_TOKEN=xxx VERCEL_TOKEN=yyy node setup.mjs
-// Requiere Node 18+
+// NEON_TOKEN y VERCEL_TOKEN deben estar en el entorno
+import { writeFileSync } from 'fs';
 
 const NEON_TOKEN   = process.env.NEON_TOKEN;
 const VERCEL_TOKEN = process.env.VERCEL_TOKEN;
 const GITHUB_REPO  = 'dougibanez/shopping-list';
 const BRANCH       = 'claude/event-shopping-list-app-RSSop';
+const PROJECT_NAME = 'shopping-list';
 
 if (!NEON_TOKEN || !VERCEL_TOKEN) {
-  console.error('Faltan variables: NEON_TOKEN y VERCEL_TOKEN son requeridas');
+  console.error('Faltan NEON_TOKEN y/o VERCEL_TOKEN');
   process.exit(1);
 }
 
-const neon   = (path, opts = {}) => fetch(`https://console.neon.tech/api/v2${path}`, {
-  ...opts, headers: { Authorization: `Bearer ${NEON_TOKEN}`, 'Content-Type': 'application/json', ...opts.headers }
-}).then(r => r.ok ? r.json() : r.text().then(t => { throw new Error(`Neon ${path}: ${t}`) }));
+const neon = (path, opts = {}) =>
+  fetch(`https://console.neon.tech/api/v2${path}`, {
+    ...opts,
+    headers: { Authorization: `Bearer ${NEON_TOKEN}`, 'Content-Type': 'application/json', ...opts.headers }
+  }).then(r => r.json());
 
-const vercel = (path, opts = {}) => fetch(`https://api.vercel.com${path}`, {
-  ...opts, headers: { Authorization: `Bearer ${VERCEL_TOKEN}`, 'Content-Type': 'application/json', ...opts.headers }
-}).then(r => r.ok ? r.json() : r.text().then(t => { throw new Error(`Vercel ${path}: ${t}`) }));
+const vercel = (path, opts = {}) =>
+  fetch(`https://api.vercel.com${path}`, {
+    ...opts,
+    headers: { Authorization: `Bearer ${VERCEL_TOKEN}`, 'Content-Type': 'application/json', ...opts.headers }
+  }).then(r => r.json());
 
-// ── 1. Neon: crear proyecto ──────────────────────────────────────────────────
-console.log('\n▶ 1/5  Creando proyecto en Neon…');
-const { project } = await neon('/projects', {
-  method: 'POST',
-  body: JSON.stringify({ project: { name: 'shopping-list', region_id: 'aws-us-east-2' } })
-});
-console.log(`   proyecto: ${project.id}`);
+// ── 1. Reusar proyecto Neon existente o crear uno ────────────────────────────
+console.log('\n▶ 1/4  Buscando proyecto Neon…');
+const { projects } = await neon('/projects');
+let project = projects?.find(p => p.name === PROJECT_NAME);
+if (project) {
+  console.log(`   Reutilizando proyecto existente: ${project.id}`);
+} else {
+  console.log('   Creando nuevo proyecto…');
+  const res = await neon('/projects', {
+    method: 'POST',
+    body: JSON.stringify({ project: { name: PROJECT_NAME, region_id: 'aws-us-east-2' } })
+  });
+  project = res.project;
+  console.log(`   Proyecto creado: ${project.id}`);
+}
 
-// ── 2. Neon: connection string ───────────────────────────────────────────────
-console.log('▶ 2/5  Obteniendo connection string…');
-const connResp = await neon(
+// ── 2. Obtener connection string ─────────────────────────────────────────────
+console.log('▶ 2/4  Obteniendo connection string…');
+const connRes = await neon(
   `/projects/${project.id}/connection_uri?role_name=neondb_owner&database_name=neondb&pooled=true`
 );
-const DATABASE_URL = connResp.uri;
-console.log(`   ${DATABASE_URL.slice(0, 45)}…`);
+const DATABASE_URL = connRes.uri;
+if (!DATABASE_URL) throw new Error('No se pudo obtener DATABASE_URL: ' + JSON.stringify(connRes));
+console.log(`   ${DATABASE_URL.slice(0, 50)}…`);
+writeFileSync('/tmp/db_url.txt', DATABASE_URL);
 
-// ── 3. Neon: crear tabla ─────────────────────────────────────────────────────
-console.log('▶ 3/5  Creando tabla lists en Neon…');
-await neon(`/projects/${project.id}/query`, {
+// ── 3. Crear tabla lists ─────────────────────────────────────────────────────
+console.log('▶ 3/4  Creando tabla lists…');
+const queryRes = await neon(`/projects/${project.id}/query`, {
   method: 'POST',
   body: JSON.stringify({
     query: `CREATE TABLE IF NOT EXISTS lists (
@@ -50,39 +65,30 @@ await neon(`/projects/${project.id}/query`, {
     database_name: 'neondb'
   })
 });
-console.log('   tabla lists ✓');
+console.log('   Tabla lists:', queryRes.results ?? queryRes);
 
-// ── 4. Vercel: crear proyecto vinculado al repo ──────────────────────────────
-console.log('▶ 4/5  Creando proyecto en Vercel…');
-const [owner, repo] = GITHUB_REPO.split('/');
+// ── 4. Crear / obtener proyecto Vercel ───────────────────────────────────────
+console.log('▶ 4/4  Configurando proyecto en Vercel…');
 let vProject;
-try {
-  vProject = await vercel('/v10/projects', {
-    method: 'POST',
-    body: JSON.stringify({
-      name: 'shopping-list',
-      framework: null,
-      gitRepository: { type: 'github', repo: GITHUB_REPO },
-      installCommand: 'npm install',
-      buildCommand: null,
-      outputDirectory: '.'
-    })
-  });
-} catch (e) {
-  // Si ya existe, obtenemos el existente
-  if (e.message.includes('already exists') || e.message.includes('conflict')) {
-    const list = await vercel(`/v10/projects?search=shopping-list&limit=5`);
-    vProject = list.projects?.find(p => p.name === 'shopping-list');
-    if (!vProject) throw e;
-    console.log('   proyecto ya existía, usando el existente');
-  } else throw e;
-}
-const projectId = vProject.id;
-console.log(`   proyecto: ${projectId}`);
 
-// ── 5. Vercel: agregar DATABASE_URL y desplegar ──────────────────────────────
-console.log('▶ 5/5  Configurando env var y desplegando…');
-await vercel(`/v10/projects/${projectId}/env`, {
+// Buscar si ya existe
+const { projects: vProjects } = await vercel(`/v10/projects?search=${PROJECT_NAME}&limit=10`);
+vProject = vProjects?.find(p => p.name === PROJECT_NAME);
+
+if (!vProject) {
+  const created = await vercel('/v10/projects', {
+    method: 'POST',
+    body: JSON.stringify({ name: PROJECT_NAME, framework: null })
+  });
+  if (created.error) throw new Error('Crear proyecto Vercel: ' + JSON.stringify(created.error));
+  vProject = created;
+  console.log(`   Proyecto Vercel creado: ${vProject.id}`);
+} else {
+  console.log(`   Proyecto Vercel existente: ${vProject.id}`);
+}
+
+// Agregar/actualizar DATABASE_URL
+const envRes = await vercel(`/v10/projects/${vProject.id}/env`, {
   method: 'POST',
   body: JSON.stringify([{
     key: 'DATABASE_URL',
@@ -90,30 +96,27 @@ await vercel(`/v10/projects/${projectId}/env`, {
     type: 'encrypted',
     target: ['production', 'preview', 'development']
   }])
-}).catch(() => console.log('   (DATABASE_URL ya configurada)'));
-
-const deployment = await vercel('/v13/deployments', {
-  method: 'POST',
-  body: JSON.stringify({
-    name: 'shopping-list',
-    project: projectId,
-    gitSource: {
-      type: 'github',
-      repo: GITHUB_REPO,
-      ref: BRANCH
-    },
-    projectSettings: {
-      framework: null,
-      installCommand: 'npm install',
-      buildCommand: null,
-      outputDirectory: '.'
-    },
-    target: 'production'
-  })
 });
+if (envRes.error?.code === 'ENV_ALREADY_EXISTS') {
+  // Obtener el ID del env existente y actualizarlo
+  const envList = await vercel(`/v10/projects/${vProject.id}/env`);
+  const existing = envList.envs?.find(e => e.key === 'DATABASE_URL');
+  if (existing) {
+    await vercel(`/v10/projects/${vProject.id}/env/${existing.id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ value: DATABASE_URL, target: ['production', 'preview', 'development'] })
+    });
+    console.log('   DATABASE_URL actualizada');
+  }
+} else if (envRes.error) {
+  console.warn('   Advertencia env:', JSON.stringify(envRes.error));
+} else {
+  console.log('   DATABASE_URL configurada');
+}
 
-const appUrl = `https://${deployment.url}`;
-console.log(`\n✅ Deploy iniciado`);
-console.log(`   URL: ${appUrl}`);
-console.log(`   Estado: ${deployment.readyState ?? 'building…'}`);
-console.log(`\n   Seguí el progreso en: https://vercel.com/dashboard`);
+console.log('\n✅ Neon y Vercel configurados');
+console.log(`   PROJECT_ID: ${vProject.id}`);
+console.log(`   Ejecutar: npx vercel --prod --token $VERCEL_TOKEN`);
+
+// Escribir PROJECT_ID para el siguiente paso
+writeFileSync('/tmp/vercel_project_id.txt', vProject.id);
