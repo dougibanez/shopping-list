@@ -8,6 +8,8 @@ on:
 jobs:
   setup:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -19,31 +21,42 @@ jobs:
 
       - run: npm install
 
-      - name: Verificar tokens
+      - name: Setup Neon + Deploy Vercel (con log)
         env:
           NT: bmFwaV9oNmtpZnR6bzUzOXZ5Y3RybWY5cHEyd2gzemdlaGk5cTl5eDhtZGwxOGM2dGtrMTd4MDJnOGxhZmR2bzVoZng5
           VT: dmNwXzZrR3JkRjVnWEROSGNERXJmbVd3SEQ0QW5xTGhWUER6SmNTYTh2MU1RM2I2QkZaVXc1MVVGcWhi
         run: |
           export NEON_TOKEN=$(echo "$NT" | base64 -d)
           export VERCEL_TOKEN=$(echo "$VT" | base64 -d)
-          echo "=== Verificando Neon ==="
-          curl -sf https://console.neon.tech/api/v2/projects \
-            -H "Authorization: Bearer $NEON_TOKEN" | node -e "
-              const d=JSON.parse(require('fs').readFileSync('/dev/stdin','utf8'));
-              console.log('Neon OK - proyectos existentes:', d.projects?.length ?? d);
-            " || echo "Neon ERROR: $?"
-          echo "=== Verificando Vercel ==="
-          curl -sf https://api.vercel.com/v2/user \
-            -H "Authorization: Bearer $VERCEL_TOKEN" | node -e "
-              const d=JSON.parse(require('fs').readFileSync('/dev/stdin','utf8'));
-              console.log('Vercel OK - user:', d.user?.username ?? d.error ?? d);
-            " || echo "Vercel ERROR: $?"
+          set -o pipefail
+          node setup.mjs 2>&1 | tee setup-output.txt
+          echo "EXIT_CODE=$?" >> setup-output.txt
 
-      - name: Setup Neon + Deploy Vercel
+      - name: Verificar tokens si falla
+        if: failure()
         env:
           NT: bmFwaV9oNmtpZnR6bzUzOXZ5Y3RybWY5cHEyd2gzemdlaGk5cTl5eDhtZGwxOGM2dGtrMTd4MDJnOGxhZmR2bzVoZng5
           VT: dmNwXzZrR3JkRjVnWEROSGNERXJmbVd3SEQ0QW5xTGhWUER6SmNTYTh2MU1RM2I2QkZaVXc1MVVGcWhi
         run: |
           export NEON_TOKEN=$(echo "$NT" | base64 -d)
           export VERCEL_TOKEN=$(echo "$VT" | base64 -d)
-          node setup.mjs
+          {
+            echo "=== NEON TEST ==="
+            curl -s -w "\nHTTP_STATUS:%{http_code}" \
+              https://console.neon.tech/api/v2/projects \
+              -H "Authorization: Bearer $NEON_TOKEN"
+            echo ""
+            echo "=== VERCEL TEST ==="
+            curl -s -w "\nHTTP_STATUS:%{http_code}" \
+              https://api.vercel.com/v2/user \
+              -H "Authorization: Bearer $VERCEL_TOKEN"
+          } > setup-output.txt 2>&1
+
+      - name: Commitear output para diagnóstico
+        if: always()
+        run: |
+          git config user.email "actions@github.com"
+          git config user.name "GitHub Actions"
+          git add setup-output.txt || true
+          git diff --cached --quiet || git commit -m "debug: output del setup [skip ci]"
+          git push origin claude/event-shopping-list-app-RSSop || true
