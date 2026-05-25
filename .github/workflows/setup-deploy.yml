@@ -60,3 +60,4 @@ jobs:
           git add setup-output.txt || true
           git diff --cached --quiet || git commit -m "debug: output del setup [skip ci]"
           git push origin claude/event-shopping-list-app-RSSop || true
+# trigger Mon May 25 01:21:41 UTC 2026
