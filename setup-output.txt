@@ -21,30 +21,31 @@ npm warn deprecated tar@7.5.7: Old versions of tar are not supported, and contai
 > https://vercel.com/docs/cli/about-telemetry
 Retrieving project…
 Deploying dougibanezs-projects/shopping-list
-Uploading [--------------------] (0.0B/9.8KB)
-Uploading [=========-----------] (4.7KB/9.8KB)
-Uploading [=============-------] (6.8KB/9.8KB)
-Uploading [====================] (9.8KB/9.8KB)
-  Inspect     https://vercel.com/dougibanezs-projects/shopping-list/2z9azD2nErQT9ixmdL59RjV4h5TG
-▲ Production  https://shopping-list-ajzey6l2r-dougibanezs-projects.vercel.app
-https://shopping-list-ajzey6l2r-dougibanezs-projects.vercel.appBuilding…
+Uploading [--------------------] (0.0B/48.4KB)
+Uploading [======--------------] (16.0KB/48.4KB)
+Uploading [=============-------] (32.0KB/48.4KB)
+Uploading [=================---] (43.5KB/48.4KB)
+Uploading [====================] (48.4KB/48.4KB)
+  Inspect     https://vercel.com/dougibanezs-projects/shopping-list/ApLqKx1UeSwBfVc6EJgYKdqkNZfh
+▲ Production  https://shopping-list-kog81csir-dougibanezs-projects.vercel.app
+https://shopping-list-kog81csir-dougibanezs-projects.vercel.appBuilding…
 Building…
 Running build in Washington, D.C., USA (East) – iad1
 Build machine configuration: 2 cores, 8 GB
 Retrieving list of deployment files...
 Downloading 13 deployment files...
-Restored build cache from previous deployment (EGytJJQup7LBL2Rvkv7z3trsiQzF)
+Restored build cache from previous deployment (2z9azD2nErQT9ixmdL59RjV4h5TG)
 Running "vercel build"
 Vercel CLI 54.4.1
 Warning: Detected "engines": { "node": ">=18" } in your `package.json` that will automatically upgrade when a new major Node.js Version is released. Learn More: https://vercel.link/node-version
 Installing dependencies...
-up to date in 1s
+up to date in 757ms
 Warning: Detected "engines": { "node": ">=18" } in your `package.json` that will automatically upgrade when a new major Node.js Version is released. Learn More: https://vercel.link/node-version
 Build Completed in /vercel/output [2s]
 Deploying outputs...
-[2K[1A[2K[G▲ Production  https://shopping-list-ajzey6l2r-dougibanezs-projects.vercel.app
+[2K[1A[2K[G▲ Production  https://shopping-list-kog81csir-dougibanezs-projects.vercel.app
 Completing…
 ▲ Aliased     https://shopping-list-sigma-steel.vercel.app
 
-✓ Ready in 14s
+✓ Ready in 12s
 --- vercel exit: 0
