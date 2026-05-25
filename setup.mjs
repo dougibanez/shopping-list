@@ -51,21 +51,17 @@ if (!DATABASE_URL) throw new Error('No se pudo obtener DATABASE_URL: ' + JSON.st
 console.log(`   ${DATABASE_URL.slice(0, 50)}…`);
 writeFileSync('/tmp/db_url.txt', DATABASE_URL);
 
-// ── 3. Crear tabla lists ─────────────────────────────────────────────────────
+// ── 3. Crear tabla lists via driver directo ──────────────────────────────────
 console.log('▶ 3/4  Creando tabla lists…');
-const queryRes = await neon(`/projects/${project.id}/query`, {
-  method: 'POST',
-  body: JSON.stringify({
-    query: `CREATE TABLE IF NOT EXISTS lists (
-      code       CHAR(5)      PRIMARY KEY,
-      name       TEXT         NOT NULL DEFAULT '',
-      items      JSONB        NOT NULL DEFAULT '[]',
-      created_at TIMESTAMPTZ  NOT NULL DEFAULT NOW()
-    )`,
-    database_name: 'neondb'
-  })
-});
-console.log('   Tabla lists:', queryRes.results ?? queryRes);
+import { neon as neonSql } from '@neondatabase/serverless';
+const sql = neonSql(DATABASE_URL);
+await sql`CREATE TABLE IF NOT EXISTS lists (
+  code       CHAR(5)      PRIMARY KEY,
+  name       TEXT         NOT NULL DEFAULT '',
+  items      JSONB        NOT NULL DEFAULT '[]',
+  created_at TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+)`;
+console.log('   Tabla lists ✓');
 
 // ── 4. Crear / obtener proyecto Vercel ───────────────────────────────────────
 console.log('▶ 4/4  Configurando proyecto en Vercel…');
