@@ -5,13 +5,13 @@
    postgresql://neondb_owner:npg_kpYy1zX9nZxa@ep-blue…
 ▶ 3/4  Creando tabla lists…
    Tabla lists: {
-  request_id: '5048ace9-f2b3-48b6-9852-b761e69e4853',
+  request_id: '3accf0a4-1140-4c82-877a-4fc04a29d59c',
   code: '',
   message: 'invalid request: operation RunProjectQuery: decode request: decode application/json: invalid: db_name (field required)'
 }
 ▶ 4/4  Configurando proyecto en Vercel…
-   Proyecto Vercel creado: prj_UL6VdBNaNxYoKPsHlNAH3qkgzs3o
-   DATABASE_URL configurada
+   Proyecto Vercel existente: prj_UL6VdBNaNxYoKPsHlNAH3qkgzs3o
+   Advertencia env: {"code":"ENV_CONFLICT","message":"A variable with the name `DATABASE_URL` already exists for the target production,preview,development on branch undefined","key":"key","envVarKey":"DATABASE_URL"}
 
 ✅ Neon y Vercel configurados
    PROJECT_ID: prj_UL6VdBNaNxYoKPsHlNAH3qkgzs3o
@@ -25,31 +25,29 @@ npm warn deprecated tar@7.5.7: Old versions of tar are not supported, and contai
 > https://vercel.com/docs/cli/about-telemetry
 Retrieving project…
 Deploying dougibanezs-projects/shopping-list
-Uploading [--------------------] (0.0B/66.7KB)
-Uploading [=======-------------] (23.4KB/66.7KB)
-Uploading [===========---------] (39.4KB/66.7KB)
-Uploading [===============-----] (50.6KB/66.7KB)
-Uploading [====================] (66.7KB/66.7KB)
-  Inspect     https://vercel.com/dougibanezs-projects/shopping-list/H9aky5h9jQwWqoJSvULvSbWQoQXF
-▲ Production  https://shopping-list-4ri02if44-dougibanezs-projects.vercel.app
-https://shopping-list-4ri02if44-dougibanezs-projects.vercel.appBuilding…
+Uploading [--------------------] (0.0B/5KB)
+Uploading [===========---------] (2.9KB/5KB)
+Uploading [====================] (5.0KB/5KB)
+  Inspect     https://vercel.com/dougibanezs-projects/shopping-list/EGytJJQup7LBL2Rvkv7z3trsiQzF
+▲ Production  https://shopping-list-blptd8zsd-dougibanezs-projects.vercel.app
+https://shopping-list-blptd8zsd-dougibanezs-projects.vercel.appBuilding…
+Building…
 Running build in Washington, D.C., USA (East) – iad1
 Build machine configuration: 2 cores, 8 GB
-Build machine configuration: 2 cores, 8 GB
 Retrieving list of deployment files...
-Previous build caches not available.
 Downloading 13 deployment files...
+Restored build cache from previous deployment (H9aky5h9jQwWqoJSvULvSbWQoQXF)
 Running "vercel build"
 Vercel CLI 54.4.1
 Warning: Detected "engines": { "node": ">=18" } in your `package.json` that will automatically upgrade when a new major Node.js Version is released. Learn More: https://vercel.link/node-version
 Installing dependencies...
-added 14 packages in 908ms
+up to date in 501ms
 Warning: Detected "engines": { "node": ">=18" } in your `package.json` that will automatically upgrade when a new major Node.js Version is released. Learn More: https://vercel.link/node-version
 Build Completed in /vercel/output [2s]
 Deploying outputs...
-[2K[1A[2K[G▲ Production  https://shopping-list-4ri02if44-dougibanezs-projects.vercel.app
+[2K[1A[2K[G▲ Production  https://shopping-list-blptd8zsd-dougibanezs-projects.vercel.app
 Completing…
 ▲ Aliased     https://shopping-list-sigma-steel.vercel.app
 
-✓ Ready in 11s
+✓ Ready in 12s
 --- vercel exit: 0
